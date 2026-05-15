@@ -46,6 +46,9 @@ M.ensure_local_file = function()
 	local fallback = vim.fn.stdpath("data") .. "/ignore.txt"
 	local fallback_file = io.open(fallback, "r")
 	local content = fallback_file and fallback_file:read("*a") or ""
+	if fallback_file then
+		fallback_file:close()
+	end
 	local new_file = io.open(local_file, "w")
 	if not new_file then
 		vim.notify("TexCount: Failed to create local ignore file.", vim.log.levels.ERROR)
