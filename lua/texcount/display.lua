@@ -100,6 +100,13 @@ function M.search_word_occurrences(word, stats_win, win_opts)
 				})
 
 				vim.api.nvim_set_current_win(display_occurrences_win)
+				vim.api.nvim_create_autocmd("CursorMoved", {
+					buffer = target_buf,
+					once = true,
+					callback = function()
+						vim.api.nvim_buf_clear_namespace(target_buf, jump_ns, 0, -1)
+					end,
+				})
 
 				if vim.api.nvim_win_is_valid(win) then
 					vim.api.nvim_win_close(win, true)
