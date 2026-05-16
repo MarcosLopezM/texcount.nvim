@@ -140,6 +140,7 @@ function M.create_stats_window(results)
 	local buf, win = windows.create_floating_win()
 
 	local show_all = false
+	local show_ignored = false
 	local display_limit = 15
 	local namespace_id = vim.api.nvim_create_namespace("TexCountColors")
 
@@ -163,6 +164,29 @@ function M.create_stats_window(results)
 	local function render_buffer()
 		local lines = {}
 		local highlights = {}
+
+		vim.api.nvim_buf_clear_namespace(buf, namespace_id, 0, -1)
+
+		if show_ignored then
+			local ignored_words = require("texcount.file_handling").get_ignored_words()
+
+			for word, _ in pairs(ignored_words) do
+				table.insert(lines, "  " .. word)
+			end
+
+			table.sort(lines)
+
+			vim.bo[buf].modifiable = true
+			vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+			vim.bo[buf].modifiable = false
+
+			vim.api.nvim_win_set_config(win, {
+				title = string.format("%d words ignored", #lines),
+				title_pos = "center",
+			})
+			return
+		end
+
 		local limit = show_all and #results or math.min(#results, display_limit)
 
 		for i = 1, limit do
@@ -190,6 +214,11 @@ function M.create_stats_window(results)
 	end
 
 	render_buffer()
+
+	vim.keymap.set("n", "i", function()
+		show_ignored = not show_ignored
+		render_buffer()
+	end, { buffer = buf, silent = true, desc = "Show list of ignored words" })
 
 	vim.keymap.set("n", "t", function()
 		show_all = not show_all

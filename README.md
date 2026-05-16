@@ -42,6 +42,7 @@ $\LaTeX$ project.
 | Key    | Action                              |
 |--------|-------------------------------------|
 | `t`    | Toggle between top 15 and all words |
+| `i`    | Show the words been ignored         |
 | `<CR>` | Jump to word occurrence             |
 | `q`    | Close window                        |
 | `<Esc>`| Close window                        |
