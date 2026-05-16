@@ -47,7 +47,7 @@ function M.search_word_occurrences(word, stats_win, win_opts)
 				vim.notify("Sin coincidencias para " .. word, vim.log.levels.WARN)
 			end
 
-			local buf, win = windows.create_floating_window(win_opts)
+			local buf, win = windows.create_floating_win(win_opts)
 
 			vim.api.nvim_win_set_config(win, {
 				title = string.format(" %d coincidencias para %s ", #display_lines, word),
@@ -130,7 +130,7 @@ function M.create_stats_window(results)
 		return
 	end
 
-	local buf, win = windows.create_floating_window()
+	local buf, win = windows.create_floating_win()
 
 	local show_all = false
 	local display_limit = 15
