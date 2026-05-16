@@ -14,7 +14,7 @@ local windows = require("texcount.windows")
 ---@param word string
 ---@param stats_win integer?
 ---@param win_opts WindowOpts
-function M.search_word_occurrences(word, stats_win, win_opts)
+local function search_word_occurrences(word, stats_win, win_opts)
 	local jump_ns = vim.api.nvim_create_namespace("FreqJumpHighlight")
 	local display_occurrences_win = windows.get_non_float_win()
 	local args = { "rg", "-n", "--column", "-w", word, "-t", "tex" }
@@ -203,7 +203,7 @@ function M.create_stats_window(results)
 
 		if word and word ~= "" then
 			local config = vim.api.nvim_win_get_config(win)
-			M.search_word_occurrences(
+			search_word_occurrences(
 				word,
 				win,
 				{ row = config.row, col = config.col, width = config.width, height = config.height }
