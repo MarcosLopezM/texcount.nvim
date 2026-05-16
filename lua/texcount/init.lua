@@ -7,8 +7,8 @@ M.config = {
 	min_freq = 2,
 	keymaps = {
 		run = "<leader>tc",
-		add = "<leader>tca",
-		delete = "<leader>tcd",
+		add = "<leader>ta",
+		delete = "<leader>td",
 	},
 }
 
