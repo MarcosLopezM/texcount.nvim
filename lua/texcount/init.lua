@@ -29,7 +29,9 @@ end
 function M.run(min_freq, filename)
 	min_freq = min_freq or M.config.min_freq
 	filename = filename or vim.fn.expand("%")
-	local cmd = { "texcount", "-freq=" .. min_freq, "-strict", "--merge ", filename }
+
+	files.get_ignored_words()
+	local cmd = { "texcount", "-freq=" .. min_freq, "-strict", "-merge", filename }
 
 	vim.system(cmd, { text = true }, function(obj)
 		if obj.code ~= 0 then
