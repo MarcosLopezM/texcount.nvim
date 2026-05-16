@@ -18,9 +18,9 @@ M.setup = function(opts)
 
 	local km = M.config.keymaps
 	if km then
-		vim.keymap("n", km.run, M.run, { "TexCount: Run" })
-		vim.keymap("n", km.add, files.add_word_to_ignore(), { "TexCount: Add word to ignore." })
-		vim.keymap("n", km.delete, files.delete_word_from_ignore(), { "TexCount: Delete word from ignore." })
+		vim.keymap.set("n", km.run, M.run, { desc = "TexCount: Run" })
+		vim.keymap.set("n", km.add, files.add_word_to_ignore, { desc = "TexCount: Add word to ignore." })
+		vim.keymap.set("n", km.delete, files.delete_word_from_ignore, { desc = "TexCount: Delete word from ignore." })
 	end
 end
 
