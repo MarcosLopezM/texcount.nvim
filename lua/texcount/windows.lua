@@ -24,8 +24,11 @@ M.create_floating_win = function(opts)
 	}
 
 	local win_opts = vim.tbl_extend("force", default_config, opts or {})
-
 	local win = vim.api.nvim_open_win(buf, true, win_opts)
+	vim.wo[win].wrap = true
+	vim.wo[win].scrolloff = 0
+	vim.wo[win].sidescrolloff = 0
+	vim.wo[win].cursorline = true
 
 	vim.keymap.set("n", "q", "<CMD>close<CR>", { buffer = buf, silent = true })
 	vim.keymap.set("n", "<Esc>", "<CMD>close<CR>", { buffer = buf, silent = true })

@@ -130,6 +130,40 @@ local function search_word_occurrences(word, stats_win, win_opts)
 	end)
 end
 
+---@param entries table{string: string}
+---@param win_width integer
+---@param win_height integer
+local function layout(entries, win_width, win_height, col_sep)
+	col_sep = col_sep or ""
+	local sep_width = vim.fn.strdisplaywidth(col_sep)
+
+	local max_width = 0
+	for _, entry in ipairs(entries) do
+		max_width = math.max(max_width, vim.fn.strdisplaywidth(entry))
+	end
+	local col_width = max_width + 2 + sep_width
+	local num_cols = math.max(1, math.floor(win_width / col_width))
+	local num_rows = math.min(win_height, math.ceil(#entries / num_cols))
+	num_cols = math.ceil(#entries / num_rows)
+
+	local lines = {}
+	for row = 1, num_rows do
+		local line = ""
+		for col = 1, num_cols do
+			local idx = (col - 1) * num_rows + row
+
+			if idx <= #entries then
+				local entry = entries[idx]
+				local display_word = vim.fn.strdisplaywidth(entry)
+				local padding = string.rep(" ", col_width - display_word - sep_width)
+				line = line .. entry .. padding .. col_sep
+			end
+		end
+		table.insert(lines, line)
+	end
+	return lines, col_width, num_cols, num_rows
+end
+
 ---@param results TexCountResult[]
 function M.create_stats_window(results)
 	if #results == 0 then
@@ -161,7 +195,12 @@ function M.create_stats_window(results)
 		return "FreqLow"
 	end
 
+	local num_rows = 0
+	local col_width = 0
+
 	local function render_buffer()
+		local win_width = vim.api.nvim_win_get_width(win)
+		local win_height = vim.api.nvim_win_get_height(win)
 		local lines = {}
 		local highlights = {}
 
@@ -169,30 +208,55 @@ function M.create_stats_window(results)
 
 		if show_ignored then
 			local ignored_words = require("texcount.file_handling").get_ignored_words()
+			local entries = {}
 
-			for word, _ in pairs(ignored_words) do
-				table.insert(lines, "  " .. word)
+			for word in pairs(ignored_words) do
+				table.insert(entries, "  " .. word)
 			end
 
-			table.sort(lines)
+			table.sort(entries)
+			lines, col_width, _, num_rows = layout(entries, win_width, win_height, "  │")
 
 			vim.bo[buf].modifiable = true
 			vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 			vim.bo[buf].modifiable = false
 
 			vim.api.nvim_win_set_config(win, {
-				title = string.format("%d words ignored", #lines),
+				title = string.format(" %d words ignored ", #entries),
 				title_pos = "center",
 			})
 			return
 		end
 
 		local limit = show_all and #results or math.min(#results, display_limit)
+		local entries = {}
 
 		for i = 1, limit do
-			local data = results[i]
-			table.insert(lines, string.format("  %4d  │  %s", data.freq, data.word))
-			table.insert(highlights, { row = #lines - 1, hl = get_hl(data.freq) })
+			table.insert(entries, string.format("  %4d  │  %s", results[i].freq, results[i].word))
+		end
+
+		lines, col_width, _, num_rows = layout(entries, win_width, win_height)
+
+		for i, entry in ipairs(entries) do
+			local col = math.floor((i - 1) / num_rows)
+			local row = (i - 1) % num_rows
+
+			local byte_start = 0
+			for prev_col = 0, col - 1 do
+				local prev_idx = prev_col * num_rows + row + 1
+				if prev_idx <= #entries then
+					byte_start = byte_start
+						+ #entries[prev_idx]
+						+ (col_width - vim.fn.strdisplaywidth(entries[prev_idx]))
+				end
+			end
+
+			table.insert(highlights, {
+				row = row,
+				col_start = byte_start,
+				col_end = byte_start + #entry,
+				hl = get_hl(results[i].freq),
+			})
 		end
 
 		vim.bo[buf].modifiable = true
@@ -202,9 +266,9 @@ function M.create_stats_window(results)
 		vim.api.nvim_buf_clear_namespace(buf, namespace_id, 0, -1)
 
 		for _, hl in ipairs(highlights) do
-			vim.api.nvim_buf_set_extmark(buf, namespace_id, hl.row, 0, {
-				end_row = hl.row + 1,
-				end_col = 0,
+			vim.api.nvim_buf_set_extmark(buf, namespace_id, hl.row, hl.col_start, {
+				end_row = hl.row,
+				end_col = hl.col_end,
 				hl_group = hl.hl,
 			})
 		end
@@ -226,9 +290,18 @@ function M.create_stats_window(results)
 	end, { buffer = buf, silent = true, desc = "Toggle All/Top N" })
 
 	vim.keymap.set("n", "<CR>", function()
+		if show_ignored then
+			return
+		end
 		local cursor = vim.api.nvim_win_get_cursor(win)
-		local line = vim.api.nvim_buf_get_lines(buf, cursor[1] - 1, cursor[1], false)[1]
-		local word = line:match("│%s*(.-)%s*$")
+		local row = cursor[1] - 1
+		local col = math.floor(cursor[2] / col_width)
+		local idx = col * num_rows + row + 1
+
+		if idx > #results then
+			return
+		end
+		local word = results[idx].word
 
 		if word and word ~= "" then
 			local config = vim.api.nvim_win_get_config(win)
